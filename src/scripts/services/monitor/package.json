@@ -1,0 +1,26 @@
+{
+  "name": "monitor",
+  "description": "monitor",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "typings": "./typings/index",
+  "files": [
+    "./dist"
+  ],
+  "devDependencies": {
+    "@types/node": "^10.9.4",
+    "ts-loader": "^4.5.0",
+    "typescript": "^3.0.3",
+    "tslint": "^5.11.0",
+    "webpack": "^4.17.1",
+    "webpack-cli": "^3.1.0"
+  },
+  "scripts": {
+    "full": "npm install && npm link prunella && npm run build",
+    "lint": "tslint --project .",
+    "transform": "tsc",
+    "pack": "webpack --config webpack.config.js",
+    "build": "npm run lint && npm run transform && npm run pack"
+  }
+}

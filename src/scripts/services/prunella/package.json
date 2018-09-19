@@ -1,0 +1,43 @@
+{
+  "name": "prunella",
+  "description": "prunella",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./lib/index.js",
+  "types": "./typings/index",
+  "files": [
+    "./lib"
+  ],
+  "dependencies": {
+    "util": "^0.11.0",
+    "ms-rest": "^2.3.6",
+    "ms-rest-azure": "^2.5.7",
+    "azure-storage": "^2.10.1",
+    "request-promise": "^4.2.2",
+    "azure-arm-compute": "^6.0.0",
+    "azure-arm-storage": "^5.2.0",
+    "azure-keyvault": "^3.0.4",
+    "applicationinsights": "^1.0.4",
+    "node-webhooks": "^1.4.0",
+    "restler": "^3.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^10.9.4",
+    "ts-loader": "^4.5.0",
+    "typescript": "^3.0.3",
+    "mocha": "^5.2.0",
+    "jsdoc": "^3.5.5",
+    "webpack": "^4.17.1",
+    "webpack-cli": "^3.1.0",
+    "tslint": "^5.11.0"
+  },
+  "scripts": {
+    "full": "npm install && npm run build && npm link",
+    "lint": "tslint --project .",
+    "transform": "tsc",
+    "doc": "./node_modules/.bin/jsdoc ./lib -d ./doc",
+    "test": "./node_modules/.bin/mocha",
+    "pack": "webpack --config webpack.config.js",
+    "build": "npm run lint && npm run transform && npm run test && npm run doc"
+  }
+}

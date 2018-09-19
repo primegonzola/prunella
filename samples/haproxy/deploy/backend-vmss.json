@@ -1,0 +1,233 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "apiVersions": {
+            "type": "object"
+        },
+        "uniqueNameFix": {
+            "type": "string"
+        },
+        "operationMode": {
+            "type": "string"
+        },
+        "projectName": {
+            "type": "string"
+        },
+        "subnetId": {
+            "type": "string"
+        },
+        "adminUserName": {
+            "type": "string",
+            "metadata": {
+                "description": "Admin username on all VMs."
+            }
+        },
+        "adminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Admin password on all VMs."
+            }
+        },
+        "bootstrapStorageAccountName": {
+            "type": "string"
+        },
+        "bootstrapStorageAccountKey": {
+            "type": "securestring"
+        },
+        "bootstrapStorageAccountSas": {
+            "type": "securestring"
+        },
+        "omsWorkspaceId": {
+            "type": "string"
+        },
+        "omsWorkspaceKey": {
+            "type": "string"
+        },
+        "statusTopicId": {
+            "type": "string"
+        },
+        "vmSize": {
+            "type": "string",
+            "defaultValue": "Standard_F1",
+            "metadata": {
+                "description": "Size of VM to use for proxy servers."
+            }
+        },
+        "vmCount": {
+            "type": "int",
+            "defaultValue": 0,
+            "metadata": {
+                "description": "Default Number of proxy servers to deploy and keep running (min and default in scaling set)."
+            },
+            "maxValue": 100
+        },
+        "vmCountMax": {
+            "type": "int",
+            "defaultValue": 10,
+            "metadata": {
+                "description": "Maximum number of proxy servers in scaling set."
+            },
+            "maxValue": 100
+        }
+    },
+    "variables": {
+        "projectName": "[parameters('projectName')]",
+        "apiVersions": "[parameters('apiVersions')]",
+        "uniqueNameFix": "[parameters('uniqueNameFix')]",
+        "vmssName": "[concat('backend-vmss-', variables('uniqueNameFix'))]",
+        "vmssId": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', variables('vmssName'))]",
+        "vmssPrefix": "[variables('vmssName')]",
+        "nicName": "[concat('backend-vmss-nic-', variables('uniqueNameFix'))]",
+        "ipConfigName": "[concat('backend-vmss-ipconfig', variables('uniqueNameFix'))]",
+        "autoScaleName": "[concat('backend-vmss-autoscale-', variables('uniqueNameFix'))]",
+        "statusTopicId": "[parameters('statusTopicId')]",
+        "statusTopicName": "[split(variables('statusTopicId'),'/')[8]]",
+        "singleQuote": "'",
+        "imageReference": {
+            "publisher": "Canonical",
+            "offer": "UbuntuServer",
+            "sku": "16.04-LTS",
+            "version": "latest"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "apiVersion": "[variables('apiVersions').virtualMachineScaleSets]",
+            "name": "[variables('vmssName')]",
+            "location": "[resourceGroup().location]",
+            "sku": {
+                "name": "[parameters('vmSize')]",
+                "capacity": "[parameters('vmCount')]"
+            },
+            "identity": {
+                "type": "systemAssigned"
+            },
+            "properties": {
+                "overprovision": "false",
+                "upgradePolicy": {
+                    "mode": "Manual"
+                },
+                "virtualMachineProfile": {
+                    "storageProfile": {
+                        "osDisk": {
+                            "caching": "ReadOnly",
+                            "createOption": "FromImage"
+                        },
+                        "dataDisks": [],
+                        "imageReference": "[variables('imageReference')]"
+                    },
+                    "osProfile": {
+                        "computerNamePrefix": "[variables('vmssPrefix')]",
+                        "adminUsername": "[parameters('adminUsername')]",
+                        "adminPassword": "[parameters('adminPassword')]"
+                    },
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "[variables('nicName')]",
+                                "properties": {
+                                    "primary": true,
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "[variables('ipConfigName')]",
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": "[parameters('subnetId')]"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "extensionProfile": {
+                        "extensions": [
+                            {
+                                "name": "MSILinuxExtension",
+                                "properties": {
+                                    "publisher": "Microsoft.ManagedIdentity",
+                                    "type": "ManagedIdentityExtensionForLinux",
+                                    "typeHandlerVersion": "1.0",
+                                    "autoUpgradeMinorVersion": true,
+                                    "settings": {
+                                        "port": 50342
+                                    },
+                                    "protectedSettings": {}
+                                }
+                            },
+                            {
+                                "name": "bootstrapcmd",
+                                "properties": {
+                                    "publisher": "Microsoft.Azure.Extensions",
+                                    "type": "CustomScript",
+                                    "typeHandlerVersion": "2.0",
+                                    "autoUpgradeMinorVersion": true,
+                                    "settings": {
+                                        "fileUris": [
+                                            "[concat(uri(deployment().properties.templateLink.uri, 'download.sh'), parameters('bootstrapStorageAccountSas'))]",
+                                            "[concat(uri(deployment().properties.templateLink.uri, 'backend-init.sh'), parameters('bootstrapStorageAccountSas'))]",
+                                            "https://raw.githubusercontent.com/Microsoft/OMS-Agent-for-Linux/master/installer/scripts/onboard_agent.sh"
+                                        ]
+                                    },
+                                    "protectedSettings": {
+                                        "commandToExecute": "[concat('./backend-init.sh',' ',variables('singleQuote'), variables('projectName'),variables('singleQuote'),' ', variables('singleQuote'), parameters('bootstrapStorageAccountName'),variables('singleQuote'),' ',variables('singleQuote'), parameters('bootstrapStorageAccountKey'),variables('singleQuote'),' ',variables('singleQuote'), parameters('bootstrapStorageAccountSas'),variables('singleQuote'),' ',variables('singleQuote'), parameters('omsWorkspaceId'),variables('singleQuote'),' ',variables('singleQuote'), parameters('omsWorkspaceKey'),variables('singleQuote'),' ', variables('singleQuote'), 'VirtualMachineScaleSet', variables('singleQuote'), ' ', variables('singleQuote'), variables('vmssId'), variables('singleQuote'), ' ',variables('singleQuote'), parameters('statusTopicId'), variables('singleQuote'))]"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Insights/autoscaleSettings",
+            "apiVersion": "[variables('apiVersions').autoScaleSettings]",
+            "name": "[variables('autoScaleName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[variables('vmssName')]"
+            ],
+            "properties": {
+                "enabled": true,
+                "name": "[variables('autoScaleName')]",
+                "targetResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]",
+                "profiles": [
+                    {
+                        "name": "Profile1",
+                        "capacity": {
+                            "minimum": "[parameters('vmCount')]",
+                            "maximum": "[parameters('vmCountMax')]",
+                            "default": "[parameters('vmCount')]"
+                        }
+                    }
+                ],
+                "notifications": [
+                    {
+                        "operation": "Scale"
+                    }
+                ]
+            }
+        }
+    ],
+    "outputs": {
+        "vmssId": {
+            "value": "[resourceId('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]",
+            "type": "string"
+        },
+        "vmssPrefix": {
+            "value": "[variables('vmssPrefix')]",
+            "type": "string"
+        },
+        "vmssPrincipalId": {
+            "type": "string",
+            "value": "[reference(concat(resourceId('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName')),'/providers/Microsoft.ManagedIdentity/Identities/default'),variables('apiVersions').identities).principalId]"
+        },
+        "vmssAutoScaleName": {
+            "value": "[variables('autoScaleName')]",
+            "type": "string"
+        }
+    }
+}
