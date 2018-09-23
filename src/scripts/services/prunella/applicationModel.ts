@@ -288,17 +288,17 @@ class ApplicationModel implements IApplicationModel {
                 const calls = [];
                 // check what to crud
                 if (creates.length > 0) {
-                    this.environment.logger.trace(
+                    this.environment.logger.info(
                         util.format("number of creates found for %s: %s", id, creates.length));
                     calls.push(this.environment.data.createStates(creates));
                 }
                 if (updates.length > 0) {
-                    this.environment.logger.trace(
+                    this.environment.logger.info(
                         util.format("number of updates found for %s: %s", id, updates.length));
                     calls.push(this.environment.data.updateStates(updates));
                 }
                 if (deletes.length > 0) {
-                    this.environment.logger.trace(
+                    this.environment.logger.info(
                         util.format("number of deletes found for %s: %s", id, deletes.length));
                     calls.push(this.environment.data.deleteStates(deletes));
                 }

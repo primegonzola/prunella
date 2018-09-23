@@ -7,6 +7,7 @@ export interface IEnvironment {
     logger: ILogger;
     data: IDataModel;
     application: IApplicationModel;
+    credentials: any;
 }
 
 export declare class Environment implements IEnvironment {
@@ -17,6 +18,31 @@ export declare class Environment implements IEnvironment {
     public logger: ILogger;
     public data: IDataModel;
     public application: IApplicationModel;
+    public credentials: any;
+    public settings: Settings;
+}
+
+export declare class Settings {
+    public static isEnabled: boolean;
+    public static get(credentials?: any): Promise<Settings>;
+    public resourceGroup: string;
+    public statusTopicId: string;
+    public subscriptionId: string;
+    public storageAccountId: string;
+    public keyVaultUri: string;
+    public storageAccountKey: string;
+    public webHookUri: string;
+    public applicationInsightsKey: string;
+    constructor(
+        subscriptionId: string,
+        resourceGroup: string,
+        keyVaultUri: string,
+        storageAccountId: string,
+        storageAccountKey: string,
+        statusTopicId: string,
+        webHookUri: string,
+        applicationInsightsKey: string,
+    );
 }
 
 export interface IRowEntity {
@@ -177,6 +203,12 @@ export interface IVirtualMachineScaleSetService {
 export interface IApiClient {
     storage: IStorageService;
     compute: IComputeService;
+}
+
+export declare class ApiClient {
+    public static createInstance(
+        credentials: any, subscriptionId: string,
+        storageAccountId: string, storageAccountKey: string): Promise<IApiClient>;
 }
 
 export type StatusEvent = {

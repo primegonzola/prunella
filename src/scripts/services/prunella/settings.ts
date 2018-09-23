@@ -21,13 +21,11 @@ class Settings {
         credentials = credentials || await msRestAzure.loginWithAppServiceMSI(options);
         // get keyvault client
         const client = new KeyVault.KeyVaultClient(credentials);
-        // override version
-        // client.apiVersion = "2018-02-14";
         // get various secrets
-        const webHookUri = await Settings.secret(client, "WebHookUri",
-            global.process.env.WEB_HOOK_URI);
-        const storageAccountKey = await Settings.secret(client, "StorageAccountKey",
-            global.process.env.STORAGE_ACCOUNT_KEY);
+        const webHookUri = global.process.env.WEB_HOOK_URI ||
+            await Settings.secret(client, "WebHookUri", global.process.env.WEB_HOOK_URI);
+        const storageAccountKey = global.process.env.STORAGE_ACCOUNT_KEY ||
+            await Settings.secret(client, "StorageAccountKey", global.process.env.STORAGE_ACCOUNT_KEY);
         // return value or null
         return new Settings(
             global.process.env.AZURE_SUBSCRIPTION_ID,

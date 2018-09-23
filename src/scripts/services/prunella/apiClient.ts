@@ -3,17 +3,14 @@ import * as restler from "restler";
 import {
     IApiClient,
     IComputeService,
-    ILogger,
     IStorageService,
     IVirtualMachineScaleSetService,
 } from "./typings";
 
 import { ComputeManagementClient } from "azure-arm-compute";
 import * as azureStorage from "azure-storage";
-import * as msRestAzure from "ms-rest-azure";
 import { Logger } from "./logger";
 import { Resource } from "./resource";
-import { Settings } from "./settings";
 
 class StorageAccountInfo {
     private storageAccountName: string;
@@ -221,9 +218,9 @@ class StorageService implements IStorageService {
 class ComputeService implements IComputeService {
     public virtualMachineScaleSets: IVirtualMachineScaleSetService;
     private subscriptionId: AAGUID;
-    private credentials: msRestAzure.MSITokenCredentials;
+    private credentials: any;
 
-    constructor(credentials: msRestAzure.MSITokenCredentials, subscriptionId: AAGUID) {
+    constructor(credentials: any, subscriptionId: AAGUID) {
         Logger.enter("ComputeService.constructor", () => {
             this.credentials = credentials;
             this.subscriptionId = subscriptionId;
@@ -234,9 +231,9 @@ class ComputeService implements IComputeService {
 
 class VirtualMachineScaleSetService implements IVirtualMachineScaleSetService {
     private subscriptionId: AAGUID;
-    private credentials: msRestAzure.MSITokenCredentials;
+    private credentials: any;
     private computeClient: ComputeManagementClient;
-    constructor(credentials: msRestAzure.MSITokenCredentials, subscriptionId: AAGUID) {
+    constructor(credentials: any, subscriptionId: AAGUID) {
         Logger.enter("VirtualMachineScaleSetService.constructor", () => {
             this.credentials = credentials;
             this.subscriptionId = subscriptionId;
@@ -328,22 +325,22 @@ class ApiClient implements IApiClient {
         });
     }
 
-    public static async createInstance(logger: ILogger, settings: Settings): Promise<IApiClient> {
+    public static async createInstance(
+        credentials: any, subscriptionId: string,
+        storageAccountId: string, storageAccountKey: string): Promise<IApiClient> {
         return Logger.enterAsync<IApiClient>("ApiClient.createInstance", async () => {
-            // get MSI credentials
-            const credentials = await msRestAzure.loginWithAppServiceMSI();
             // return client
-            return new ApiClient(credentials, settings.subscriptionId, new StorageAccountInfo(
-                new Resource(settings.storageAccountId).name, settings.storageAccountKey));
+            return new ApiClient(credentials, subscriptionId, new StorageAccountInfo(
+                new Resource(storageAccountId).name, storageAccountKey));
         });
     }
 
     public compute: IComputeService;
     public storage: IStorageService;
-    private credentials: msRestAzure.MSITokenCredentials;
+    private credentials: any;
     private subscriptionId: string;
     constructor(
-        credentials: msRestAzure.MSITokenCredentials,
+        credentials: any,
         subscriptionId: AAGUID, storageAccountInfo: StorageAccountInfo) {
         Logger.enter("ApiClient.constructor", () => {
             this.credentials = credentials;

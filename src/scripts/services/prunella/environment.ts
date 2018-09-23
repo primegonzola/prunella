@@ -9,6 +9,8 @@ import {
     ILogger,
 } from "./typings";
 
+import * as msRestAzure from "ms-rest-azure";
+
 import { ApiClient } from "./apiClient";
 import { ApplicationModel } from "./applicationModel";
 import { DataModel } from "./dataModel";
@@ -32,8 +34,6 @@ class Environment implements IEnvironment {
 
     public static async createInstance(context: IContext): Promise<IEnvironment> {
         return Logger.enterAsync<IEnvironment>("Environment.createInstance", async () => {
-            // get settings
-            const settings = await Settings.get();
             // get package
             const pkg: any = await Environment.loadPackage();
             // init logger
@@ -41,7 +41,7 @@ class Environment implements IEnvironment {
             // create environment
             const model = new Environment(logger, pkg.name);
             // initialize
-            await model.initialize(settings);
+            await model.initialize();
             // all done
             return model;
         });
@@ -52,7 +52,8 @@ class Environment implements IEnvironment {
     public logger: ILogger;
     public data: IDataModel;
     public application: IApplicationModel;
-
+    public settings: Settings;
+    public credentials: any;
     constructor(logger: ILogger, name: string) {
         Logger.enter("Environment.constructor", () => {
             this.name = name;
@@ -60,19 +61,27 @@ class Environment implements IEnvironment {
         });
     }
 
-    private async initialize(settings: Settings): Promise<void> {
+    private async initialize(): Promise<void> {
         return Logger.enterAsync<void>("Environment.initialize", async () => {
             if (Environment.isEnabled()) {
+                // get credentials
+                this.credentials = await msRestAzure.loginWithAppServiceMSI();
+                // get settings
+                this.settings = await Settings.get();
                 // create api
-                this.api = await ApiClient.createInstance(this.logger, settings);
+                this.api = await ApiClient.createInstance(this.credentials,
+                    this.settings.subscriptionId,
+                    this.settings.storageAccountId,
+                    this.settings.storageAccountKey,
+                );
                 // create data model
                 this.data = await DataModel.createInstance(this);
                 // creates options for this instance
                 const options = {
-                    resourceGroup: settings.resourceGroup,
-                    storageAccountId: settings.storageAccountId,
-                    subscriptionId: settings.subscriptionId,
-                    topicId: settings.statusTopicId,
+                    resourceGroup: this.settings.resourceGroup,
+                    storageAccountId: this.settings.storageAccountId,
+                    subscriptionId: this.settings.subscriptionId,
+                    topicId: this.settings.statusTopicId,
                 };
                 // create application model
                 this.application = await ApplicationModel.createInstance(this, options);

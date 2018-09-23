@@ -15,6 +15,7 @@ export {
 };
 
 import {
+    ApiClient,
     ApplicationModel,
     ApplicationModelOptions,
     Environment,
@@ -43,6 +44,7 @@ import {
 } from './prunella';
 
 export {
+    ApiClient,
     ApplicationModel,
     ApplicationModelOptions,
     Environment,
