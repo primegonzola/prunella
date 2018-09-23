@@ -7,7 +7,8 @@ RESOURCE_GROUP=${PARTS[3]}
 STATUS_TOPIC_NAME=${PARTS[7]}
 
 # use MSI to get access token
-ACCESS_TOKEN=$(curl http://localhost:50342/oauth2/token --data "resource=https://management.azure.com/" -H Metadata:true | jq -r .access_token)
+#ACCESS_TOKEN=$(curl http://localhost:50342/oauth2/token --data "resource=https://management.azure.com/" -H Metadata:true | jq -r .access_token)
+ACCESS_TOKEN=$(curl 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fmanagement.azure.com%2F' -H Metadata:true | jq -r .access_token)
 
 # get topic key and endpoint
 REQUEST_URI=https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.EventGrid/topics/${STATUS_TOPIC_NAME}/listKeys?api-version=2018-01-01

@@ -25,7 +25,7 @@ export interface IRowEntity {
     metadata?: object;
 }
 
-export declare class EntityRow implements IRowEntity {
+export declare class RowEntity implements IRowEntity {
     public partitionKey: string;
     public rowKey: string;
     public metadata?: object;
@@ -40,7 +40,7 @@ export interface IStateEntity extends IRowEntity {
     state: string;
 }
 
-declare class StateEntity extends EntityRow implements IStateEntity {
+declare class StateEntity extends RowEntity implements IStateEntity {
     public id: string;
     public type: string;
     public createdWhen: Date;
@@ -57,7 +57,7 @@ export interface IStatusEntity extends IRowEntity {
     timestamp: Date;
 }
 
-declare class StatusEntity extends EntityRow implements IStatusEntity {
+declare class StatusEntity extends RowEntity implements IStatusEntity {
     public id: string;
     public type: string;
     public tag: string;
@@ -144,6 +144,7 @@ export declare class Utils {
 }
 
 export interface IStorageService {
+    createGenerator(): any;
     createBlobService(): any;
     createTableService(): any;
     createTableBatch(): any;
@@ -189,7 +190,7 @@ export type StatusEvent = {
     };
 };
 
-export type StatusTarget = {
+export interface IStatusTarget {
     name: string;
     type: string;
     resources: string[];
@@ -197,14 +198,29 @@ export type StatusTarget = {
     minimum: number;
     expiration: number;
     unhealthy: string;
-};
+}
+
+export declare class StatusTarget {
+    public static targets: IStatusTarget[];
+    public static getByResourceId(id: string): IStatusTarget;
+    public name: string;
+    public type: string;
+    public resources: string[];
+    public grace: number;
+    public minimum: number;
+    public expiration: number;
+    public unhealthy: string;
+    constructor(
+        name: string, type: string,
+        resources: string[], unhealthy: string,
+        expiration: number, grace: number, minimum: number)
+}
 
 export type ApplicationModelOptions = {
     topicId: string;
     subscriptionId: string;
     resourceGroup: string;
     storageAccountId: string;
-    targets: StatusTarget[];
 };
 
 export interface IApplicationModel {

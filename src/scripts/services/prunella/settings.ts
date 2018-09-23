@@ -36,7 +36,6 @@ class Settings {
             global.process.env.STORAGE_ACCOUNT_ID,
             storageAccountKey,
             global.process.env.STATUS_TOPIC_ID,
-            global.process.env.STATUS_TARGETS,
             webHookUri,
             global.process.env.APPINSIGHTS_INSTRUMENTATIONKEY,
         );
@@ -70,9 +69,6 @@ class Settings {
     public get storageAccountId(): string {
         return this.settingsStorageAccountId;
     }
-    public get statusTargets(): string {
-        return this.settingsStatusTargets;
-    }
     public get keyVaultUri(): string {
         return this.settingsKeyVaultUri;
     }
@@ -90,7 +86,6 @@ class Settings {
     private settingsStatusTopicId: string;
     private settingsSubscriptionId: string;
     private settingsStorageAccountId: string;
-    private settingsStatusTargets: string;
     private settingsKeyVaultUri: string;
     private settingsStorageAccountKey: string;
     private settingsWebHookUri: string;
@@ -103,7 +98,6 @@ class Settings {
         storageAccountId: string,
         storageAccountKey: string,
         statusTopicId: string,
-        statusTargets: string,
         webHookUri: string,
         applicationInsightsKey: string,
     ) {
@@ -113,7 +107,6 @@ class Settings {
         this.settingsStorageAccountId = storageAccountId;
         this.settingsStorageAccountKey = storageAccountKey;
         this.settingsStatusTopicId = statusTopicId;
-        this.settingsStatusTargets = statusTargets;
         this.settingsWebHookUri = webHookUri;
         this.settingsApplicationInsightsKey = applicationInsightsKey;
     }

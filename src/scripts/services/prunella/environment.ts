@@ -7,7 +7,6 @@ import {
     IDataModel,
     IEnvironment,
     ILogger,
-    StatusTarget,
 } from "./typings";
 
 import { ApiClient } from "./apiClient";
@@ -17,7 +16,6 @@ import { Logger } from "./logger";
 import { Settings } from "./settings";
 
 class Environment implements IEnvironment {
-
     public static async loadPackage(): Promise<object> {
         return new Promise((resolve, reject) => {
             fs.readFile(__dirname + "/../package.json", (error, data) => {
@@ -74,7 +72,6 @@ class Environment implements IEnvironment {
                     resourceGroup: settings.resourceGroup,
                     storageAccountId: settings.storageAccountId,
                     subscriptionId: settings.subscriptionId,
-                    targets: JSON.parse(settings.statusTargets) as StatusTarget[],
                     topicId: settings.statusTopicId,
                 };
                 // create application model

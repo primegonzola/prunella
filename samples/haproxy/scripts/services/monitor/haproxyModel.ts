@@ -4,12 +4,13 @@ import * as prunella from "prunella";
 import * as util from "util";
 
 import {
-    EntityRow,
     HashMap,
     IEnvironment,
     IHashMap,
     Logger,
     Resource,
+    RowEntity,
+    StatusTarget,
     Utils,
 } from "prunella";
 
@@ -32,42 +33,16 @@ interface IHAProxyTarget {
 }
 
 class HAProxyTarget implements IHAProxyTarget {
-    public static findByFrontId(id: string): IHAProxyTarget {
+    public static getByBackendId(id: string): IHAProxyTarget {
         // check if valid id
         if (id !== undefined && id !== null) {
             // get targets
-            const variable = global.process.env._HAPROXY_TARGETS;
-            const targets: IHAProxyTarget[] =
-                (variable !== undefined && variable !== null && variable !== "") ? JSON.parse(variable) : null;
-            if (targets !== null) {
-                for (const target of targets) {
-                    if (target.frontend !== undefined && target.frontend !== null) {
-                        if (target.frontend.toLowerCase() === id.toLowerCase()) {
-                            return target;
-                        }
-                    }
-                }
-            }
-        }
-        // nothing there
-        return null;
-    }
-
-    public static findByBackId(id: string): IHAProxyTarget {
-        // check if valid id
-        if (id !== undefined && id !== null) {
-            // get targets
-            const variable = global.process.env.HAPROXY_TARGETS;
-            const targets: IHAProxyTarget[] =
-                (variable !== undefined && variable !== null && variable !== "") ? JSON.parse(variable) : null;
-            if (targets !== null) {
-                for (const target of targets) {
-                    if (target.frontend !== undefined && target.frontend !== null) {
-                        if (target.backends !== undefined && target.backends !== null) {
-                            for (const backend of target.backends) {
-                                if (backend.id.toLowerCase() === id.toLowerCase()) {
-                                    return target;
-                                }
+            for (const target of HAProxyTarget.targets) {
+                if (target.frontend !== undefined && target.frontend !== null) {
+                    if (target.backends !== undefined && target.backends !== null) {
+                        for (const backend of target.backends) {
+                            if (backend.id.toLowerCase() === id.toLowerCase()) {
+                                return target;
                             }
                         }
                     }
@@ -78,18 +53,44 @@ class HAProxyTarget implements IHAProxyTarget {
         return null;
     }
 
-    public grace: number;
+    public static getBackendTarget(id: string): IBackendTarget {
+        // check if valid id
+        if (id !== undefined && id !== null) {
+            // get targets
+            for (const target of HAProxyTarget.targets) {
+                if (target.backends !== undefined && target.backends !== null) {
+                    for (const backend of target.backends) {
+                        if (backend.id.toLowerCase() === id.toLowerCase()) {
+                            return backend;
+                        }
+                    }
+                }
+            }
+        }
+        // nothing there
+        return null;
+    }
+
+    private static targetList: IHAProxyTarget[];
     public frontend: string;
     public backends: IBackendTarget[];
 
-    constructor(frontend: string, backends: IBackendTarget[], grace = 0) {
-        this.grace = grace;
+    constructor(frontend: string, backends: IBackendTarget[]) {
         this.frontend = frontend;
         this.backends = backends;
     }
+
+    public static get targets(): IHAProxyTarget[] {
+        if (HAProxyTarget.targetList === undefined || HAProxyTarget.targetList === null) {
+            const variable = global.process.env.HAPROXY_TARGETS;
+            HAProxyTarget.targetList =
+                (variable !== undefined && variable !== null && variable !== "") ? JSON.parse(variable) : [];
+        }
+        return HAProxyTarget.targetList;
+    }
 }
 
-class HAProxyEntity extends EntityRow implements IHAProxyEntity {
+class HAProxyEntity extends RowEntity implements IHAProxyEntity {
     public static generateRowKey(id: string, type: string, tag: string): string {
         return util.format("%s$$%s$$%s",
             type,
@@ -215,16 +216,24 @@ class HAProxyModel implements IHAProxyModel {
         return Logger.enterAsync<void>("HAProxyModel.generateHAproxies", async () => {
             // final config
             const configs = new HashMap();
-            // get all proxies
-            const proxies = await this.readHAProxies();
-            // go over each proxy
-            for (const proxy of proxies) {
-                // check if proxy is back end
-                const target = HAProxyTarget.findByBackId(proxy.id);
+            // get all entities
+            const entities = await this.readHAProxies();
+            // go over each entity
+            for (const entity of entities) {
+                // check if entity is back end and status
+                const status = StatusTarget.getByResourceId(entity.id);
+                const target = HAProxyTarget.getByBackendId(entity.id);
                 // if found
-                if (target !== null) {
+                if (status !== null && target !== null) {
+                    // see if any grace period enabled
+                    if (status.grace > 0) {
+                        // don"t do anything if not paased grace period
+                        if (entity.createdWhen.getTime() + (status.grace * 1000) <= Date.now()) {
+                            break;
+                        }
+                    }
                     // get managed resource
-                    const resource = new Resource(proxy.id);
+                    const resource = new Resource(entity.id);
                     // see if config is there, if not add
                     if (!configs.has(target.frontend)) {
                         // add
@@ -236,9 +245,9 @@ class HAProxyModel implements IHAProxyModel {
                     last = last + util.format("server %s %s:80 check\n",
                         util.format("vmss--%s--%s--%s--%s--%s--%s",
                             resource.subscriptionId, resource.resourceGroup, resource.name,
-                            proxy.tag, proxy.state,
-                            moment(proxy.createdWhen).format("YYYY-MM-DDTHH:mm:ss")),
-                        proxy.state);
+                            entity.tag, entity.state,
+                            moment(entity.createdWhen).format("YYYY-MM-DDTHH:mm:ss")),
+                        entity.state);
                     // update
                     configs.set(target.frontend, last);
                 }
@@ -269,39 +278,39 @@ class HAProxyModel implements IHAProxyModel {
             // final calls to be made
             const calls = [];
             // get status map
-            const proxies: IHAProxyEntity[] = results[0];
+            const entities: IHAProxyEntity[] = results[0];
             // get state map
             const stateMap: IHashMap = results[1];
             // the deletes to do
             const deletes: IHAProxyEntity[] = [];
-            // loop over each proxy
-            for (const proxy of proxies) {
+            // loop over each entity
+            for (const entity of entities) {
                 // check if found as backend
-                const target = HAProxyTarget.findByBackId(proxy.id);
+                const target = HAProxyTarget.getByBackendId(entity.id);
                 // if not found delete it
                 if (target === null) {
                     // clean up
-                    deletes.push(proxy);
+                    deletes.push(entity);
                 } else {
                     // get as managed resource
-                    const resource = new Resource(proxy.id);
+                    const resource = new Resource(entity.id);
                     // check if found in state map
                     if (stateMap.has(resource.subscriptionId) &&
                         stateMap.get(resource.subscriptionId).has(resource.resourceGroup) &&
                         stateMap.get(resource.subscriptionId).get(resource.resourceGroup).has(resource.name) &&
                         stateMap.get(resource.subscriptionId).get(resource.resourceGroup).
-                            get(resource.name).has(proxy.tag)) {
+                            get(resource.name).has(entity.tag)) {
                         // get found state
                         const state = stateMap.get(resource.subscriptionId).get(resource.resourceGroup).
-                            get(resource.name).get(proxy.tag);
+                            get(resource.name).get(entity.tag);
                         // check if succeeded
                         if (state.state !== "Succeeded") {
                             // clean up
-                            deletes.push(proxy);
+                            deletes.push(entity);
                         }
                     } else {
                         // not found delete
-                        deletes.push(proxy);
+                        deletes.push(entity);
                     }
                 }
             }
@@ -340,20 +349,22 @@ class HAProxyModel implements IHAProxyModel {
                                 proxyMap.get(subKey).has(rgKey) &&
                                 proxyMap.get(subKey).get(rgKey).has(typeKey) &&
                                 proxyMap.get(subKey).get(rgKey).get(typeKey).has(state.tag)) {
-                                // get found proxy
-                                const proxy = proxyMap.get(subKey).get(rgKey).get(typeKey).get(state.tag);
+                                // get found entity
+                                const entity = proxyMap.get(subKey).get(rgKey).get(typeKey).get(state.tag);
                                 // check state and delete if not succeeded
                                 if (state.state !== "Succeeded") {
                                     // clean up and delete
-                                    deletes.push(proxy);
+                                    deletes.push(entity);
                                 }
                             } else {
                                 // add if succeeded
                                 if (state.state === "Succeeded") {
+                                    // check if found as status target
+                                    const status = StatusTarget.getByResourceId(state.id);
                                     // add if a backend
-                                    const target = HAProxyTarget.findByBackId(state.id);
-                                    // see if one is found
-                                    if (target !== null) {
+                                    const target = HAProxyTarget.getByBackendId(state.id);
+                                    // assure both are valid
+                                    if (status !== null && target !== null) {
                                         // add new one
                                         creates.push(new HAProxyEntity(
                                             state.id,

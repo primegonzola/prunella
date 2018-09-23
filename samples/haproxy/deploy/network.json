@@ -12,14 +12,14 @@
     "variables": {
         "apiVersions": "[parameters('apiVersions')]",
         "uniqueNameFix": "[parameters('uniqueNameFix')]",
-        "virtualNetwork" : "[concat('network-vnet-',variables('uniqueNameFix'))]",
+        "virtualNetwork": "[concat('network-vnet-',variables('uniqueNameFix'))]",
         "addressPrefix": "10.0.0.0/16",
-        "frontendSubnet" : "[concat('frontend-sn-',variables('uniqueNameFix'))]",
-        "backendSubnet" : "[concat('backend-sn-',variables('uniqueNameFix'))]",
-        "jumpboxSubnet" : "[concat('jumpbox-sn-',variables('uniqueNameFix'))]",
-        "frontendSubnetPrefix" : "10.0.1.0/24",
-        "backendSubnetPrefix" : "10.0.2.0/24",
-        "jumpboxSubnetPrefix" : "10.0.10.0/24"
+        "frontendSubnet": "[concat('frontend-sn-',variables('uniqueNameFix'))]",
+        "backendSubnet": "[concat('backend-sn-',variables('uniqueNameFix'))]",
+        "jumpboxSubnet": "[concat('jumpbox-sn-',variables('uniqueNameFix'))]",
+        "frontendSubnetPrefix": "10.0.1.0/24",
+        "backendSubnetPrefix": "10.0.2.0/24",
+        "jumpboxSubnetPrefix": "10.0.10.0/24"
     },
     "resources": [
         {

@@ -33,6 +33,11 @@ class StorageService implements IStorageService {
             this.storageAccountInfo = storageAccountInfo;
         });
     }
+    public createGenerator(): any {
+        return Logger.enter<any>("StorageService.createGenerator", () => {
+            return azureStorage.TableUtilities.entityGenerator;
+        });
+    }
     public createBlobService(): any {
         return Logger.enter<any>("StorageService.createBlobService", () => {
             return azureStorage.createBlobService(

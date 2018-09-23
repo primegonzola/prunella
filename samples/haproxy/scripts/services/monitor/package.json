@@ -13,16 +13,22 @@
   },
   "devDependencies": {
     "@types/node": "^10.9.4",
+    "@types/chai": "^4.1.5",
+    "@types/mocha": "^5.2.5",
     "ts-loader": "^4.5.0",
     "typescript": "^3.0.3",
     "tslint": "^5.11.0",
     "webpack": "^4.17.1",
-    "webpack-cli": "^3.1.0"
+    "webpack-cli": "^3.1.0",
+    "chai": "^4.1.2",
+    "mocha": "^5.2.0",
+    "ts-node": "^7.0.1"
   },
   "scripts": {
     "full": "npm install && npm link prunella && npm run build",
     "lint": "tslint --project .",
     "transform": "tsc",
+    "load": "env KEY_VAULT_URI=YOUR_KEY STORAGE_ACCOUNT_ID=YOUR_KEY mocha -r ts-node/register test/**/*.load.ts",
     "pack": "webpack --config webpack.config.js",
     "build": "npm run lint && npm run transform && npm run pack"
   }

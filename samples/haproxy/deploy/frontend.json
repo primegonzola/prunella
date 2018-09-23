@@ -86,7 +86,7 @@
         },
         "backendPort": {
             "type": "int",
-            "defaultValue": 80            
+            "defaultValue": 80
         },
         "healthCheckUri": {
             "type": "string",
@@ -141,6 +141,15 @@
         "projectName": "[parameters('projectName')]",
         "apiVersions": "[parameters('apiVersions')]",
         "uniqueNameFix": "[parameters('uniqueNameFix')]",
+        "ipName": "[concat('frontend-ip-', variables('uniqueNameFix'))]",
+        "nicName": "[concat('frontend-nic-', variables('uniqueNameFix'))]",
+        "nsgName": "[concat('frontend-nsg-', variables('uniqueNameFix'))]",
+        "lbName": "[concat('frontend-lb-', variables('uniqueNameFix'))]",
+        "bpName": "[concat('frontend-bp-', variables('uniqueNameFix'))]",
+        "dnsName": "[concat('frontend-dns-', variables('uniqueNameFix'))]",
+        "lbId": "[resourceId('Microsoft.Network/loadBalancers',variables('lbName'))]",
+        "lbPoolId": "[concat(variables('lbId'),'/backendAddressPools/', variables('bpName'))]",
+        "lbProbeId": "[concat(variables('lbId'),'/probes/healthCheck')]",
         "vmssName": "[concat('frontend-vmss-', variables('uniqueNameFix'))]",
         "vmssPrefix": "[variables('vmssName')]",
         "backendVmssId": "[parameters('backendVmssId')]",
@@ -160,8 +169,8 @@
         "enableProxyProtocol": "[parameters('enableProxyProtocol')]",
         "timeoutDraining": "[parameters('timeoutDraining')]",
         "vmssId": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', variables('vmssName'))]",
-        "nicName": "[concat('frontend-vmss-nic-', variables('uniqueNameFix'))]",
-        "ipConfigName": "[concat('frontend-vmss-ipconfig', variables('uniqueNameFix'))]",
+        "vmssNicName": "[concat('frontend-vmss-nic-', variables('uniqueNameFix'))]",
+        "vmssIpConfigName": "[concat('frontend-vmss-ipconfig', variables('uniqueNameFix'))]",
         "autoScaleName": "[concat('frontend-vmss-autoscale-', variables('uniqueNameFix'))]",
         "statusTopicId": "[parameters('statusTopicId')]",
         "statusTopicName": "[split(variables('statusTopicId'),'/')[8]]",
@@ -175,6 +184,77 @@
     },
     "resources": [
         {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "[variables('apiVersions').publicIPAddresses]",
+            "name": "[variables('ipName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('dnsName')]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/loadBalancers",
+            "apiVersion": "[variables('apiVersions').loadBalancers]",
+            "name": "[variables('lbName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[variables('ipName')]"
+            ],
+            "properties": {
+                "frontendIPConfigurations": [
+                    {
+                        "name": "LoadBalancerFrontEnd",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('ipName'))]"
+                            }
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('bpName')]"
+                    }
+                ],
+                "loadBalancingRules": [
+                    {
+                        "name": "LBRule",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(variables('lbId'),'/frontendIPConfigurations/loadBalancerFrontEnd')]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[variables('lbPoolId')]"
+                            },
+                            "protocol": "Tcp",
+                            "frontendPort": 80,
+                            "backendPort": 80,
+                            "enableFloatingIP": false,
+                            "idleTimeoutInMinutes": 5,
+                            "probe": {
+                                "id": "[variables('lbProbeId')]"
+                            }
+                        }
+                    }
+                ],
+                "probes": [
+                    {
+                        "name": "healthCheck",
+                        "properties": {
+                            "requestPath": "[parameters('healthCheckUri')]",
+                            "protocol": "Http",
+                            "port": 80,
+                            "intervalInSeconds": 5,
+                            "numberOfProbes": 2
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "type": "Microsoft.Compute/virtualMachineScaleSets",
             "apiVersion": "[variables('apiVersions').virtualMachineScaleSets]",
             "name": "[variables('vmssName')]",
@@ -184,10 +264,13 @@
                 "capacity": "[parameters('vmCount')]"
             },
             "identity": {
-                "type": "systemAssigned"
+                "type": "SystemAssigned"
             },
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/loadBalancers',variables('lbName'))]"
+            ],
             "properties": {
-                "overprovision": "false",
+                "overprovision": false,
                 "upgradePolicy": {
                     "mode": "Manual"
                 },
@@ -208,16 +291,21 @@
                     "networkProfile": {
                         "networkInterfaceConfigurations": [
                             {
-                                "name": "[variables('nicName')]",
+                                "name": "[variables('vmssNicName')]",
                                 "properties": {
                                     "primary": true,
                                     "ipConfigurations": [
                                         {
-                                            "name": "[variables('ipConfigName')]",
+                                            "name": "[variables('vmssIpConfigName')]",
                                             "properties": {
                                                 "subnet": {
                                                     "id": "[parameters('subnetId')]"
-                                                }
+                                                },
+                                                "loadBalancerBackendAddressPools": [
+                                                    {
+                                                        "id": "[variables('lbPoolId')]"
+                                                    }
+                                                ]
                                             }
                                         }
                                     ]
@@ -255,61 +343,69 @@
                                         ]
                                     },
                                     "protectedSettings": {
-                                        "commandToExecute": "[concat('./frontend-init.sh',' ',variables('singleQuote'),variables('projectName'),variables('singleQuote'),' ',variables('singleQuote'),parameters('bootstrapStorageAccountName'),variables('singleQuote'),' ',variables('singleQuote'),parameters('bootstrapStorageAccountKey'),variables('singleQuote'),' ',variables('singleQuote'), parameters('bootstrapStorageAccountSas'),variables('singleQuote'),' ',variables('singleQuote'), parameters('omsWorkspaceId'),variables('singleQuote'),' ',variables('singleQuote'),parameters('omsWorkspaceKey'),variables('singleQuote'),' ',variables('singleQuote'),'VirtualMachineScaleSet',variables('singleQuote'),' ',variables('singleQuote'),variables('vmssId'),variables('singleQuote'),' ',variables('singleQuote'),variables('statusTopicId'),variables('singleQuote'),' ',variables('singleQuote'),variables('storageAccountId'),variables('singleQuote'),' ',variables('singleQuote'),variables('sslCert'),variables('singleQuote'),' ',variables('singleQuote'),variables('sslCertPassword'),variables('singleQuote'),' ',variables('singleQuote'),variables('backendPort'),variables('singleQuote'),' ',variables('singleQuote'),variables('healthCheckUri'),variables('singleQuote'),' ',variables('singleQuote'),variables('healthCheckPort'),variables('singleQuote'),' ',variables('singleQuote'),variables('healthCheckInterval'),variables('singleQuote'),' ',variables('singleQuote'),variables('healthCheckRiseProbes'),variables('singleQuote'),' ',variables('singleQuote'),variables('healthCheckFallProbes'),variables('singleQuote'),' ',variables('singleQuote'),variables('timeoutConnect'),variables('singleQuote'),' ',variables('singleQuote'),variables('timeoutClient'),variables('singleQuote'),' ',variables('singleQuote'),variables('timeoutServer'),variables('singleQuote'),' ',variables('singleQuote'),variables('timeoutCheck'),variables('singleQuote'),' ',variables('singleQuote'),variables('enableProxyProtocol'),variables('singleQuote'),' ',variables('singleQuote'),variables('timeoutDraining'),variables('singleQuote'))]",
+                                        "commandToExecute": "[concat('./frontend-init.sh',' ',variables('singleQuote'),variables('projectName'),variables('singleQuote'),' ',variables('singleQuote'),parameters('bootstrapStorageAccountName'),variables('singleQuote'),' ',variables('singleQuote'),parameters('bootstrapStorageAccountKey'),variables('singleQuote'),' ',variables('singleQuote'), parameters('bootstrapStorageAccountSas'),variables('singleQuote'),' ',variables('singleQuote'), parameters('omsWorkspaceId'),variables('singleQuote'),' ',variables('singleQuote'),parameters('omsWorkspaceKey'),variables('singleQuote'),' ',variables('singleQuote'),'VirtualMachineScaleSet',variables('singleQuote'),' ',variables('singleQuote'),variables('vmssId'),variables('singleQuote'),' ',variables('singleQuote'),variables('statusTopicId'),variables('singleQuote'),' ',variables('singleQuote'),variables('storageAccountId'),variables('singleQuote'),' ',variables('singleQuote'),variables('sslCert'),variables('singleQuote'),' ',variables('singleQuote'),variables('sslCertPassword'),variables('singleQuote'),' ',variables('singleQuote'),variables('backendPort'),variables('singleQuote'),' ',variables('singleQuote'),variables('healthCheckUri'),variables('singleQuote'),' ',variables('singleQuote'),variables('healthCheckPort'),variables('singleQuote'),' ',variables('singleQuote'),variables('healthCheckInterval'),variables('singleQuote'),' ',variables('singleQuote'),variables('healthCheckRiseProbes'),variables('singleQuote'),' ',variables('singleQuote'),variables('healthCheckFallProbes'),variables('singleQuote'),' ',variables('singleQuote'),variables('timeoutConnect'),variables('singleQuote'),' ',variables('singleQuote'),variables('timeoutClient'),variables('singleQuote'),' ',variables('singleQuote'),variables('timeoutServer'),variables('singleQuote'),' ',variables('singleQuote'),variables('timeoutCheck'),variables('singleQuote'),' ',variables('singleQuote'),variables('enableProxyProtocol'),variables('singleQuote'),' ',variables('singleQuote'),variables('timeoutDraining'),variables('singleQuote'))]"
+                                    }
                                 }
                             }
-                        }
-                    ]
-                }
-            }
-        }
-    },
-    {
-        "type": "Microsoft.Insights/autoscaleSettings",
-        "apiVersion": "[variables('apiVersions').autoScaleSettings]",
-        "name": "[variables('autoScaleName')]",
-        "location": "[resourceGroup().location]",
-        "dependsOn": [
-            "[variables('vmssName')]"
-        ],
-        "properties": {
-            "enabled": true,
-            "name": "[variables('autoScaleName')]",
-            "targetResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]",
-            "profiles": [
-                {
-                    "name": "Profile1",
-                    "capacity": {
-                        "minimum": "[parameters('vmCount')]",
-                        "maximum": "[parameters('vmCountMax')]",
-                        "default": "[parameters('vmCount')]"
+                        ]
                     }
                 }
+            }
+        },
+        {
+            "type": "Microsoft.Insights/autoscaleSettings",
+            "apiVersion": "[variables('apiVersions').autoScaleSettings]",
+            "name": "[variables('autoScaleName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[variables('vmssName')]"
             ],
-            "notifications": [
-                {
-                    "operation": "Scale"
-                }
-            ]
+            "properties": {
+                "enabled": true,
+                "name": "[variables('autoScaleName')]",
+                "targetResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]",
+                "profiles": [
+                    {
+                        "name": "Profile1",
+                        "capacity": {
+                            "minimum": "[parameters('vmCount')]",
+                            "maximum": "[parameters('vmCountMax')]",
+                            "default": "[parameters('vmCount')]"
+                        }
+                    }
+                ],
+                "notifications": [
+                    {
+                        "operation": "Scale"
+                    }
+                ]
+            }
+        }
+    ],
+    "outputs": {
+        "ipAddress": {
+            "type": "string",
+            "value": "[reference(variables('ipName')).ipAddress]"
+        },
+        "Fqdn": {
+            "value": "[reference(variables('ipName')).dnsSettings.fqdn]",
+            "type": "string"
+        },
+        "vmssId": {
+            "value": "[resourceId('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]",
+            "type": "string"
+        },
+        "vmssPrefix": {
+            "value": "[variables('vmssPrefix')]",
+            "type": "string"
+        },
+        "vmssPrincipalId": {
+            "type": "string",
+            "value": "[reference(concat(resourceId('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName')),'/providers/Microsoft.ManagedIdentity/Identities/default'),variables('apiVersions').identities).principalId]"
+        },
+        "vmssAutoScaleName": {
+            "value": "[variables('autoScaleName')]",
+            "type": "string"
         }
     }
-],
-"outputs": {
-    "vmssId": {
-        "value": "[resourceId('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]",
-        "type": "string"
-    },
-    "vmssPrefix": {
-        "value": "[variables('vmssPrefix')]",
-        "type": "string"
-    },
-    "vmssPrincipalId": {
-        "type": "string",
-        "value": "[reference(concat(resourceId('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName')),'/providers/Microsoft.ManagedIdentity/Identities/default'),variables('apiVersions').identities).principalId]"
-    },
-    "vmssAutoScaleName": {
-        "value": "[variables('autoScaleName')]",
-        "type": "string"
-    }
-}
 }

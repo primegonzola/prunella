@@ -8,13 +8,13 @@ import {
     IStateEntity,
     IStatusEntity,
     StatusEvent,
-    StatusTarget,
 } from "./typings";
 
 import { StateEntity, StatusEntity } from "./dataModel";
 import { HashMap } from "./hashMap";
 import { Logger } from "./logger";
 import { Resource } from "./resource";
+import { StatusTarget } from "./statusTarget";
 import { Utils } from "./utils";
 
 type DeletionTarget = {
@@ -37,13 +37,11 @@ class ApplicationModel implements IApplicationModel {
 
     public environment: IEnvironment;
     private options: ApplicationModelOptions;
-    private subscriptionTopic: string;
 
     constructor(environment: IEnvironment, options: ApplicationModelOptions) {
         Logger.enter("ApplicationModel.constructor", () => {
             this.options = options;
             this.environment = environment;
-            this.subscriptionTopic = this.options.topicId;
         });
     }
 
@@ -56,20 +54,18 @@ class ApplicationModel implements IApplicationModel {
                 // clean states first
                 await this.cleanStates();
                 // loop over all targets
-                if (this.options.targets !== undefined && this.options.targets !== null) {
-                    for (const target of this.options.targets) {
-                        // check if supported target type
-                        switch (target.type) {
-                            case "VirtualMachineScaleSet":
-                                if (target.resources !== undefined && target.resources !== null) {
-                                    // loop over all resources found in the target
-                                    for (const resource of target.resources) {
-                                        // update state of the one found
-                                        await this.updateVmssState(resource.toLowerCase());
-                                    }
+                for (const target of StatusTarget.targets) {
+                    // check if supported target type
+                    switch (target.type) {
+                        case "VirtualMachineScaleSet":
+                            if (target.resources !== undefined && target.resources !== null) {
+                                // loop over all resources found in the target
+                                for (const resource of target.resources) {
+                                    // update state of the one found
+                                    await this.updateVmssState(resource.toLowerCase());
                                 }
-                                break;
-                        }
+                            }
+                            break;
                     }
                 }
             }
@@ -96,11 +92,11 @@ class ApplicationModel implements IApplicationModel {
             const isReady = await this.isReady();
             // check if ready
             if (isReady) {
-                if (event.topic.toLowerCase() === this.subscriptionTopic.toLowerCase()) {
+                if (event.topic.toLowerCase() === this.options.topicId.toLowerCase()) {
                     switch (event.eventType.toLowerCase()) {
                         case "prunella-status":
                             // see if we can find the target
-                            const target = this.findStatusTargetByResourceId(event.subject);
+                            const target = StatusTarget.getByResourceId(event.subject);
                             // check if found or ingnore
                             if (target !== null) {
                                 // update the status
@@ -166,7 +162,7 @@ class ApplicationModel implements IApplicationModel {
             // loop over each
             for (const state of states) {
                 // check if found in target
-                const target = this.findStatusTargetByResourceId(state.id);
+                const target = StatusTarget.getByResourceId(state.id);
                 // if not found delete it
                 if (target === null) {
                     deletes.push(state);
@@ -188,7 +184,7 @@ class ApplicationModel implements IApplicationModel {
             // loop over each
             for (const status of statuses) {
                 // check if found in target
-                const target = this.findStatusTargetByResourceId(status.id);
+                const target = StatusTarget.getByResourceId(status.id);
                 // if not found delete it
                 if (target === null) {
                     deletes.push(status);
@@ -375,7 +371,7 @@ class ApplicationModel implements IApplicationModel {
                                 // get instance
                                 const instance = stateMap.get(subKey).get(rgKey).get(typeKey).get(instanceId);
                                 // look up if its in status target
-                                const statusTarget = this.findStatusTargetByResourceId(instance.id);
+                                const statusTarget = StatusTarget.getByResourceId(instance.id);
                                 // if found handle it
                                 if (statusTarget !== null) {
                                     // set proper reason
@@ -451,26 +447,8 @@ class ApplicationModel implements IApplicationModel {
             }
         });
     }
-
-    private findStatusTargetByResourceId(id: string): StatusTarget {
-        // check if valid id
-        if (id !== undefined && id !== null) {
-            if (this.options.targets !== undefined && this.options.targets !== null) {
-                for (const target of this.options.targets) {
-                    if (target.resources !== undefined && target.resources !== null) {
-                        for (const resource of target.resources) {
-                            if (resource.toLowerCase() === id.toLowerCase()) {
-                                return target;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        // not found
-        return null;
-    }
 }
 
 // export
+export { StatusTarget };
 export { ApplicationModel };

@@ -140,7 +140,7 @@ popa
 
 # set proper roles
 display_progress "Setting proper role assignments"
-# give frontend and backend access to topic so it can publish info
+# give frontend and backend access to topic so they can publish info
 az role assignment create --assignee-object-id ${FRONTEND_VMSS_PRINCIPAL_ID} --scope ${PRUNELLA_STATUS_TOPIC_ID} --role Contributor
 az role assignment create --assignee-object-id ${BACKEND_VMSS_PRINCIPAL_ID} --scope ${PRUNELLA_STATUS_TOPIC_ID} --role Contributor
 # give frontend and backend access to key vault so they can read needed secrets
@@ -151,8 +151,6 @@ az role assignment create --assignee-object-id ${FRONTEND_VMSS_PRINCIPAL_ID} --s
 # give services principal proper access to frontend and backend
 az role assignment create --assignee-object-id ${PRUNELLA_SERVICES_PRINCIPAL_ID} --scope ${FRONTEND_VMSS_ID} --role Contributor
 az role assignment create --assignee-object-id ${PRUNELLA_SERVICES_PRINCIPAL_ID} --scope ${BACKEND_VMSS_ID} --role Contributor
-az role assignment create --assignee-object-id ${PRUNELLA_SERVICES_PRINCIPAL_ID} --scope ${FRONTEND_VMSS_ID} --role Reader
-az role assignment create --assignee-object-id ${PRUNELLA_SERVICES_PRINCIPAL_ID} --scope ${BACKEND_VMSS_ID} --role Reader
 
 # add to current list to be monitored
 # prepare our event data

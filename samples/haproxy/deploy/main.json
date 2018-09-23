@@ -139,12 +139,12 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "[variables('apiVersions').deployments]",
-      "name": "frontend-vmss",
+      "name": "frontend",
       "dependsOn": [],
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(uri(deployment().properties.templateLink.uri, 'frontend-vmss.json'), parameters('bootstrapStorageAccountSas'))]",
+          "uri": "[concat(uri(deployment().properties.templateLink.uri, 'frontend.json'), parameters('bootstrapStorageAccountSas'))]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -191,7 +191,7 @@
             "value": "[variables('storageAccountId')]"
           },
           "backendVmssId": {
-            "value": "[reference('backend-vmss').outputs.vmssId.value]",
+            "value": "[reference('backend').outputs.vmssId.value]"
           }
         }
       }
@@ -199,12 +199,12 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "[variables('apiVersions').deployments]",
-      "name": "backend-vmss",
+      "name": "backend",
       "dependsOn": [],
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(uri(deployment().properties.templateLink.uri, 'backend-vmss.json'), parameters('bootstrapStorageAccountSas'))]",
+          "uri": "[concat(uri(deployment().properties.templateLink.uri, 'backend.json'), parameters('bootstrapStorageAccountSas'))]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -252,36 +252,40 @@
     }
   ],
   "outputs": {
+    "frontendIp": {
+      "type": "string",
+      "value": "[reference('frontend').outputs.ipAddress.value]"
+    },
     "frontendVmssId": {
-      "value": "[reference('frontend-vmss').outputs.vmssId.value]",
+      "value": "[reference('frontend').outputs.vmssId.value]",
       "type": "string"
     },
     "frontendVmssPrefix": {
-      "value": "[reference('frontend-vmss').outputs.vmssPrefix.value]",
+      "value": "[reference('frontend').outputs.vmssPrefix.value]",
       "type": "string"
     },
     "frontendVmssPrincipalId": {
-      "value": "[reference('frontend-vmss').outputs.vmssPrincipalId.value]",
+      "value": "[reference('frontend').outputs.vmssPrincipalId.value]",
       "type": "string"
     },
     "frontendVmssAutoScaleName": {
-      "value": "[reference('frontend-vmss').outputs.vmssAutoScaleName.value]",
+      "value": "[reference('frontend').outputs.vmssAutoScaleName.value]",
       "type": "string"
     },
     "backendVmssId": {
-      "value": "[reference('backend-vmss').outputs.vmssId.value]",
+      "value": "[reference('backend').outputs.vmssId.value]",
       "type": "string"
     },
     "backendVmssPrefix": {
-      "value": "[reference('backend-vmss').outputs.vmssPrefix.value]",
+      "value": "[reference('backend').outputs.vmssPrefix.value]",
       "type": "string"
     },
     "backendVmssPrincipalId": {
-      "value": "[reference('backend-vmss').outputs.vmssPrincipalId.value]",
+      "value": "[reference('backend').outputs.vmssPrincipalId.value]",
       "type": "string"
     },
     "backendVmssAutoScaleName": {
-      "value": "[reference('backend-vmss').outputs.vmssAutoScaleName.value]",
+      "value": "[reference('backend').outputs.vmssAutoScaleName.value]",
       "type": "string"
     }
   }
