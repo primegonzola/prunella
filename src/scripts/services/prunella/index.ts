@@ -1,6 +1,7 @@
 // our local modules
 export { ApiClient } from "./apiClient";
 export { ApplicationModel } from "./applicationModel";
+export { DataModel } from "./dataModel";
 export { Environment } from "./environment";
 export { HashMap } from "./hashMap";
 export { Logger } from "./logger";

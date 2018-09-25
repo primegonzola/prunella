@@ -75,7 +75,7 @@ class Environment implements IEnvironment {
                     this.settings.storageAccountKey,
                 );
                 // create data model
-                this.data = await DataModel.createInstance(this);
+                this.data = await DataModel.createInstance(this.api);
                 // creates options for this instance
                 const options = {
                     resourceGroup: this.settings.resourceGroup,

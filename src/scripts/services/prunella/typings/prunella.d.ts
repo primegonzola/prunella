@@ -292,7 +292,7 @@ export interface IDataModel {
 }
 
 export declare class DataModel implements IDataModel {
-    public static createInstance(environment: IEnvironment);
+    public static createInstance(api: IApiClient);
     public isReady(): Promise<boolean>;
     public isReadyState(name: string): Promise<boolean>;
     public markReadyState(name: string): Promise<void>;

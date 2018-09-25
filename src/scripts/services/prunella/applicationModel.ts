@@ -10,10 +10,11 @@ import {
     StatusEvent,
 } from "./typings";
 
-import { StateEntity, StatusEntity } from "./dataModel";
 import { HashMap } from "./hashMap";
 import { Logger } from "./logger";
 import { Resource } from "./resource";
+import { StateEntity } from "./stateEntity";
+import { StatusEntity } from "./statusEntity";
 import { StatusTarget } from "./statusTarget";
 import { Utils } from "./utils";
 

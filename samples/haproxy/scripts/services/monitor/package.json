@@ -23,7 +23,8 @@
     "chai": "^4.1.2",
     "mocha": "^5.2.0",
     "ts-node": "^7.0.1",
-    "ms-rest-azure": "^2.5.7"
+    "ms-rest-azure": "^2.5.7",
+    "simple-ssh": "^1.0.0"
   },
   "scripts": {
     "full": "npm install && npm link prunella && npm run build",

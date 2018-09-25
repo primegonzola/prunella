@@ -1,5 +1,5 @@
 {
-    "name": "monitor-status",
+    "name": "monitor",
     "main":"./typings/index.d.ts",
     "homepage":"",
     "version":"0.0.1",

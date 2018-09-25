@@ -5,5 +5,10 @@
         "outDir": "./dist",        
         "sourceMap": false,
         "removeComments": true
-    }
+    },
+    "exclude": [
+        "test",
+        "typings",
+        "node_modules",
+    ]
 }

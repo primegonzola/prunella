@@ -96,6 +96,10 @@
             "type": "int",
             "defaultValue": 80
         },
+        "HAProxyHealthCheckUri": {
+            "type": "string",
+            "defaultValue": "/haproxy-health"
+        },
         "timeoutDraining": {
             "type": "int",
             "defaultValue": 90
@@ -244,7 +248,7 @@
                     {
                         "name": "healthCheck",
                         "properties": {
-                            "requestPath": "[parameters('healthCheckUri')]",
+                            "requestPath": "[parameters('HAProxyHealthCheckUri')]",
                             "protocol": "Http",
                             "port": 80,
                             "intervalInSeconds": 5,

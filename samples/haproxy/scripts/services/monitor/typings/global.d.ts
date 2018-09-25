@@ -3,3 +3,4 @@ declare namespace NodeJS {
         dependencies: any
     }    
 }
+declare var global: any;

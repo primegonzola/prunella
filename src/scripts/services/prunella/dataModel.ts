@@ -1,4 +1,5 @@
 import {
+    IApiClient,
     IDataModel,
     IEnvironment,
     IHashMap,
@@ -20,10 +21,10 @@ class DataModel implements IDataModel {
     public static ConfigurationTableName = "Configuration";
     public static ConfigurationEntitiesPK = "ConfigurationEntities";
 
-    public static async createInstance(environment: IEnvironment): Promise<IDataModel> {
+    public static async createInstance(api: IApiClient): Promise<IDataModel> {
         return Logger.enterAsync<DataModel>("DataModel.createInstance", async () => {
             // create instance
-            const model = new DataModel(environment);
+            const model = new DataModel(api);
             // init
             await model.initialize();
             // done
@@ -31,11 +32,11 @@ class DataModel implements IDataModel {
         });
     }
 
-    public environment: IEnvironment;
+    public api: IApiClient;
 
-    constructor(environment: IEnvironment) {
+    constructor(api: IApiClient) {
         Logger.enter("DataModel.constructor", () => {
-            this.environment = environment;
+            this.api = api;
         });
     }
 
@@ -48,11 +49,11 @@ class DataModel implements IDataModel {
     public async isReadyState(name: string): Promise<boolean> {
         return Logger.enterAsync<boolean>("DataModel.isReadyState", async () => {
             // check if table exists
-            const exists = await this.environment.api.storage.doesTableExist(DataModel.ConfigurationTableName);
+            const exists = await this.api.storage.doesTableExist(DataModel.ConfigurationTableName);
             // if not then stop here
             if (!exists) { return false; }
             // upsert
-            const entity = await this.environment.api.storage.getEntity(
+            const entity = await this.api.storage.getEntity(
                 DataModel.ConfigurationTableName, DataModel.ConfigurationEntitiesPK, name);
             // check found
             return Promise.resolve(entity !== null &&
@@ -64,10 +65,10 @@ class DataModel implements IDataModel {
     public async markReadyState(name: string): Promise<void> {
         return Logger.enterAsync<void>("DataModel.markReadyState", async () => {
             // upsert
-            await this.environment.api.storage.upsertEntity(
+            await this.api.storage.upsertEntity(
                 DataModel.ConfigurationTableName, DataModel.ConfigurationEntitiesPK, name, () => {
                     return {
-                        Value: this.environment.api.storage.createGenerator().String("Succeeded"),
+                        Value: this.api.storage.createGenerator().String("Succeeded"),
                     };
                 });
         });
@@ -85,7 +86,7 @@ class DataModel implements IDataModel {
     public async upsertState(state: IStateEntity): Promise<void> {
         return Logger.enterAsync<void>("DataModel.upsertState", async () => {
             const rowKey: string = StateEntity.generateRowKey(state.id, state.type, state.tag);
-            await this.environment.api.storage.upsertEntity(
+            await this.api.storage.upsertEntity(
                 DataModel.StateTableName, DataModel.StateEntitiesPK, rowKey, () => {
                     return new StateEntity(
                         state.id, state.type, state.tag, state.createdWhen, state.state, state.metadata).toEntity();
@@ -96,7 +97,7 @@ class DataModel implements IDataModel {
     public async readState(id: string, type: string, tag: string): Promise<IStateEntity> {
         return Logger.enterAsync<IStateEntity>("DataModel.readState", async () => {
             const rowKey: string = StateEntity.generateRowKey(id, type, tag);
-            const entity = await this.environment.api.storage.getEntity(
+            const entity = await this.api.storage.getEntity(
                 DataModel.StateTableName, DataModel.StateEntitiesPK, rowKey);
             return entity !== null ? StateEntity.fromEntity(entity) : null;
         });
@@ -104,7 +105,7 @@ class DataModel implements IDataModel {
 
     public async readStates(): Promise<IStateEntity[]> {
         return Logger.enterAsync<IStateEntity[]>("DataModel.readStates", async () => {
-            const entities: IStateEntity[] = await this.environment.api.storage.getEntities(
+            const entities: IStateEntity[] = await this.api.storage.getEntities(
                 DataModel.StateTableName, DataModel.StateEntitiesPK);
             return Promise.resolve(entities.map<IStateEntity>((entity) => {
                 return StateEntity.fromEntity(entity);
@@ -114,7 +115,7 @@ class DataModel implements IDataModel {
 
     public async createStates(states: IStateEntity[]): Promise<void> {
         return Logger.enterAsync<void>("DataModel.createStates", async () => {
-            this.environment.api.storage.batchEntities(DataModel.StateTableName, states, (batch, entry) => {
+            this.api.storage.batchEntities(DataModel.StateTableName, states, (batch, entry) => {
                 batch.insertOrReplaceEntity(entry.toEntity("*"));
             });
         });
@@ -122,7 +123,7 @@ class DataModel implements IDataModel {
 
     public async updateStates(states: IStateEntity[]): Promise<void> {
         return Logger.enterAsync<void>("DataModel.updateStates", async () => {
-            this.environment.api.storage.batchEntities(DataModel.StateTableName, states, (batch, entry) => {
+            this.api.storage.batchEntities(DataModel.StateTableName, states, (batch, entry) => {
                 batch.insertOrReplaceEntity(entry.toEntity("*"));
             });
         });
@@ -130,7 +131,7 @@ class DataModel implements IDataModel {
 
     public async deleteStates(states: IStateEntity[]): Promise<void> {
         return Logger.enterAsync<void>("DataModel.deleteStates", async () => {
-            this.environment.api.storage.batchEntities(DataModel.StateTableName, states, (batch, entry) => {
+            this.api.storage.batchEntities(DataModel.StateTableName, states, (batch, entry) => {
                 batch.deleteEntity(entry.toEntity());
             });
         });
@@ -139,7 +140,7 @@ class DataModel implements IDataModel {
     public async readStatus(id: string, type: string, tag: string): Promise<IStatusEntity> {
         return Logger.enterAsync<IStatusEntity>("DataModel.readStatus", async () => {
             const rowKey: string = StatusEntity.generateRowKey(id, type, tag);
-            const entity = await this.environment.api.storage.getEntity(
+            const entity = await this.api.storage.getEntity(
                 DataModel.StatusTableName, DataModel.StatusEntitiesPK, rowKey);
             return entity !== null ? StatusEntity.fromEntity(entity) : null;
         });
@@ -147,7 +148,7 @@ class DataModel implements IDataModel {
 
     public async readStatuses(): Promise<IStatusEntity[]> {
         return Logger.enterAsync<IStatusEntity[]>("DataModel.readStatuses", async () => {
-            const entities: IStatusEntity[] = await this.environment.api.storage.getEntities(
+            const entities: IStatusEntity[] = await this.api.storage.getEntities(
                 DataModel.StatusTableName, DataModel.StatusEntitiesPK);
             return Promise.resolve(entities.map<IStatusEntity>((entity) => {
                 return StatusEntity.fromEntity(entity);
@@ -157,7 +158,7 @@ class DataModel implements IDataModel {
 
     public async createStatuses(states: IStatusEntity[]): Promise<void> {
         return Logger.enterAsync<void>("DataModel.createStatuses", async () => {
-            this.environment.api.storage.batchEntities(DataModel.StatusTableName, states, (batch, entry) => {
+            this.api.storage.batchEntities(DataModel.StatusTableName, states, (batch, entry) => {
                 batch.insertOrReplaceEntity(entry.toEntity("*"));
             });
         });
@@ -165,7 +166,7 @@ class DataModel implements IDataModel {
 
     public async updateStatuses(states: IStatusEntity[]): Promise<void> {
         return Logger.enterAsync<void>("DataModel.updateStatuses", async () => {
-            this.environment.api.storage.batchEntities(DataModel.StatusTableName, states, (batch, entry) => {
+            this.api.storage.batchEntities(DataModel.StatusTableName, states, (batch, entry) => {
                 batch.insertOrReplaceEntity(entry.toEntity("*"));
             });
         });
@@ -173,7 +174,7 @@ class DataModel implements IDataModel {
 
     public async deleteStatuses(states: IStatusEntity[]): Promise<void> {
         return Logger.enterAsync<void>("DataModel.deleteStatuses", async () => {
-            this.environment.api.storage.batchEntities(DataModel.StatusTableName, states, (batch, entry) => {
+            this.api.storage.batchEntities(DataModel.StatusTableName, states, (batch, entry) => {
                 batch.deleteEntity(entry.toEntity());
             });
         });
@@ -182,7 +183,7 @@ class DataModel implements IDataModel {
     public async upsertStatus(status: IStatusEntity): Promise<void> {
         return Logger.enterAsync<void>("DataModel.upsertStatus", async () => {
             const rowKey: string = StatusEntity.generateRowKey(status.id, status.type, status.tag);
-            await this.environment.api.storage.upsertEntity(
+            await this.api.storage.upsertEntity(
                 DataModel.StatusTableName, DataModel.StatusEntitiesPK, rowKey, () => {
                     return new StatusEntity(
                         status.id, status.type, status.tag, status.changedWhen, status.status).toEntity();
@@ -205,9 +206,9 @@ class DataModel implements IDataModel {
         // check if ready or not so we can init all
         if (!isReady) {
             // create tables
-            await this.environment.api.storage.createTable(DataModel.ConfigurationTableName);
-            await this.environment.api.storage.createTable(DataModel.StateTableName);
-            await this.environment.api.storage.createTable(DataModel.StatusTableName);
+            await this.api.storage.createTable(DataModel.ConfigurationTableName);
+            await this.api.storage.createTable(DataModel.StateTableName);
+            await this.api.storage.createTable(DataModel.StatusTableName);
             // mark as ready
             await this.markReady();
         }
@@ -269,4 +270,4 @@ class DataModel implements IDataModel {
 }
 
 // export
-export { DataModel, StateEntity, StatusEntity };
+export { DataModel };

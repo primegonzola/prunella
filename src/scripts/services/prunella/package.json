@@ -39,7 +39,7 @@
     "full": "npm install && npm run build && npm link",
     "lint": "tslint --project .",
     "transform": "tsc",
-    "test": "mocha -r ts-node/register test/**/*.spec.ts",
+    "test": "mocha -r ts-node/register tests/**/*.spec.ts",
     "doc": "./node_modules/.bin/jsdoc ./lib -d ./doc",
     "pack": "webpack --config webpack.config.js",
     "build": "npm run lint && npm run test && npm run transform && npm run doc"
