@@ -32,6 +32,7 @@ export function index(context: prunella.IContext, data: any) {
                     break;
                 }
                 case "monitor-events": {
+                    context.log(JSON.stringify(data));
                     // get event
                     const event: prunella.IFunctionEvent = data;
                     // process event

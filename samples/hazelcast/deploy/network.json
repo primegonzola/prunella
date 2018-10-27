@@ -1,0 +1,73 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "apiVersions": {
+            "type": "object"
+        },
+        "uniqueNameFix": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "apiVersions": "[parameters('apiVersions')]",
+        "uniqueNameFix": "[parameters('uniqueNameFix')]",
+        "virtualNetwork": "[concat('network-vnet-',variables('uniqueNameFix'))]",
+        "addressPrefix": "10.0.0.0/16",
+        "frontendSubnet": "[concat('frontend-sn-',variables('uniqueNameFix'))]",
+        "backendSubnet": "[concat('backend-sn-',variables('uniqueNameFix'))]",
+        "jumpboxSubnet": "[concat('jumpbox-sn-',variables('uniqueNameFix'))]",
+        "frontendSubnetPrefix": "10.0.1.0/24",
+        "backendSubnetPrefix": "10.0.2.0/24",
+        "jumpboxSubnetPrefix": "10.0.10.0/24"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "[variables('apiVersions').virtualNetworks]",
+            "name": "[variables('virtualNetwork')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('addressPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('frontendSubnet')]",
+                        "properties": {
+                            "addressPrefix": "[variables('frontendSubnetPrefix')]"
+                        }
+                    },
+                    {
+                        "name": "[variables('backendSubnet')]",
+                        "properties": {
+                            "addressPrefix": "[variables('backendSubnetPrefix')]"
+                        }
+                    },
+                    {
+                        "name": "[variables('jumpboxSubnet')]",
+                        "properties": {
+                            "addressPrefix": "[variables('jumpboxSubnetPrefix')]"
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "outputs": {
+        "frontendSubnetId": {
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetwork'), variables('frontendSubnet'))]",
+            "type": "string"
+        },
+        "backendSubnetId": {
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetwork'), variables('backendSubnet'))]",
+            "type": "string"
+        },
+        "jumpboxSubnetId": {
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetwork'), variables('jumpboxSubnet'))]",
+            "type": "string"
+        }
+    }
+}

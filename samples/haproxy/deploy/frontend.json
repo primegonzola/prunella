@@ -53,7 +53,7 @@
             "metadata": {
                 "description": "Size of VM to use for proxy servers."
             }
-        },
+        }, 
         "vmCount": {
             "type": "int",
             "defaultValue": 0,

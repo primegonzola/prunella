@@ -76,6 +76,8 @@ declare class StateEntity extends RowEntity implements IStateEntity {
 
 export interface IStatusEntity extends IRowEntity {
     id: string;
+    category: string;
+    data: any;
     type: string;
     tag: string;
     changedWhen: Date;
@@ -85,6 +87,8 @@ export interface IStatusEntity extends IRowEntity {
 
 declare class StatusEntity extends RowEntity implements IStatusEntity {
     public id: string;
+    public category: string;
+    public data: any;
     public type: string;
     public tag: string;
     public changedWhen: Date;
@@ -216,9 +220,11 @@ export type StatusEvent = {
     subject: string;
     eventType: string;
     data: {
+        category: string,
         name: string,
         type: string,
         status: string,
+        data: any,
     };
 };
 

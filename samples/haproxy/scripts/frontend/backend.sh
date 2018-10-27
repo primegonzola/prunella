@@ -49,6 +49,7 @@ if [ -n "$STATUS_OUTPUT" ]; then
     "eventTime": "$(date +%Y-%m-%dT%H:%M:%S%z)",
     "data": {
         "type": "${HOST_TYPE}",
+        "category":"standalone-vmss",
         "name": "${INSTANCE_HOST_NAME}",
         "status": "${INSTANCE_STATUS}"
     }

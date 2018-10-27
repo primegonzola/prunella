@@ -30,6 +30,7 @@ STATUS_EVENT_DATA=$(
     "eventTime": "$(date +%Y-%m-%dT%H:%M:%S%z)",
     "data": {
         "type": "${HOST_TYPE}",
+        "category": "backend-vmss",
         "name": "${HOST_NAME}"
     }
 }

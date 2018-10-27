@@ -102,7 +102,8 @@ class ApplicationModel implements IApplicationModel {
                             if (target !== null) {
                                 // update the status
                                 await this.updateStatus(
-                                    event.subject, event.data.type, event.data.name, event.data.status);
+                                    event.subject, event.data.type, event.data.name,
+                                    event.data.category, event.data.status, event.data.data);
                             }
                             break;
                     }
@@ -316,7 +317,8 @@ class ApplicationModel implements IApplicationModel {
         });
     }
 
-    private async updateStatus(id: string, type: string, tag: string, status: string): Promise<void> {
+    private async updateStatus(
+        id: string, type: string, tag: string, category: string, status: string, data: any): Promise<void> {
         return Logger.enterAsync("ApplicationModel.updateStatus", async () => {
             // get current status
             const current: IStatusEntity = await this.environment.data.readStatus(id, type, tag);
@@ -325,18 +327,18 @@ class ApplicationModel implements IApplicationModel {
                 if (current.status !== status) {
                     // update
                     await this.environment.data.upsertStatus(new StatusEntity(
-                        id, type, tag, new Date(), status,
+                        id, type, tag, category, new Date(), status, data,
                     ));
                 } else {
                     // update as found but timestamp needs updating
                     await this.environment.data.upsertStatus(new StatusEntity(
-                        id, type, tag, current.changedWhen, status,
+                        id, type, tag, category, current.changedWhen, status, data,
                     ));
                 }
             } else {
                 // update as not found
                 await this.environment.data.upsertStatus(new StatusEntity(
-                    id, type, tag, new Date(), status,
+                    id, type, tag, category, new Date(), status, data,
                 ));
             }
         });

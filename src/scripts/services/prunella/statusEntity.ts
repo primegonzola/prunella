@@ -21,16 +21,20 @@ class StatusEntity extends RowEntity implements IStatusEntity {
             entity.Id._,
             entity.Type._,
             entity.Tag._,
+            entity.Category._,
             entity.ChangedWhen._,
             entity.Status._,
+            JSON.parse(entity.Data._),
             entity.Timestamp._,
             entity[".metadata"],
         );
     }
 
     public id: string;
-    public type: string;
+    public category: string;
+    public data: any;
     public tag: string;
+    public type: string;
     public changedWhen: Date;
     public status: string;
     public timestamp: Date;
@@ -38,23 +42,29 @@ class StatusEntity extends RowEntity implements IStatusEntity {
         id: string,
         type: string,
         tag: string,
+        category: string,
         changedWhen: Date,
         status: string,
+        data: any,
         timestamp?: Date,
         metadata?: object) {
         super(DataModel.StatusEntitiesPK, StatusEntity.generateRowKey(id, type, tag), metadata);
         this.id = id;
         this.type = type;
+        this.category = category;
         this.tag = tag;
         this.changedWhen = changedWhen;
         this.status = status;
+        this.data = data;
         this.timestamp = timestamp;
     }
 
     public toEntity(etag?: string) {
         const generator = ApiClient.generator();
         const entity = {
+            Category: generator.String(this.category),
             ChangedWhen: generator.DateTime(this.changedWhen),
+            Data: generator.String(JSON.stringify(this.data)),
             Id: generator.String(this.id),
             PartitionKey: generator.String(this.partitionKey),
             RowKey: generator.String(this.rowKey),

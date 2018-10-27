@@ -4,9 +4,11 @@ import { StatusEntity } from "../statusEntity";
 
 const rows = [
     new StatusEntity(
-        "id-01", "type-01", "tag-01", new Date(2001, 1), "status-01", new Date(2002, 2), { data: "metadata-01" }),
+        "id-01", "type-01", "category-1", "tag-01",
+        new Date(2001, 1), "status-01", null, new Date(2002, 2), { data: "metadata-01" }),
     new StatusEntity(
-        "id-02", "type-02", "tag-02", new Date(2003, 3), "status-02", new Date(2004, 4), { data: "metadata-02" }),
+        "id-02", "type-02", "category-1", "tag-02", new Date(2003, 3), "status-02",
+        new Date(2004, 4), null, { data: "metadata-02" }),
 ];
 
 type metadata = {
@@ -20,8 +22,10 @@ describe("StatusEntity.constructor", () => {
                 row.id,
                 row.type,
                 row.tag,
+                row.category,
                 row.changedWhen,
                 row.status,
+                row.data,
             );
             expect(target.id).to.equal(row.id);
             expect(target.type).to.equal(row.type);
@@ -38,8 +42,10 @@ describe("StatusEntity.constructor", () => {
                 row.id,
                 row.type,
                 row.tag,
+                row.category,
                 row.changedWhen,
                 row.status,
+                row.data,
                 row.timestamp,
                 row.metadata,
             );

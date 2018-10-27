@@ -186,7 +186,9 @@ class DataModel implements IDataModel {
             await this.api.storage.upsertEntity(
                 DataModel.StatusTableName, DataModel.StatusEntitiesPK, rowKey, () => {
                     return new StatusEntity(
-                        status.id, status.type, status.tag, status.changedWhen, status.status).toEntity();
+                        status.id, status.type, status.tag,
+                        status.category, status.changedWhen,
+                        status.status, status.data).toEntity();
                 });
         });
     }

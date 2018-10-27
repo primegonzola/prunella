@@ -217,10 +217,10 @@ class StorageService implements IStorageService {
 
 class ComputeService implements IComputeService {
     public virtualMachineScaleSets: IVirtualMachineScaleSetService;
-    private subscriptionId: AAGUID;
+    private subscriptionId: string;
     private credentials: any;
 
-    constructor(credentials: any, subscriptionId: AAGUID) {
+    constructor(credentials: any, subscriptionId: string) {
         Logger.enter("ComputeService.constructor", () => {
             this.credentials = credentials;
             this.subscriptionId = subscriptionId;
@@ -230,10 +230,10 @@ class ComputeService implements IComputeService {
 }
 
 class VirtualMachineScaleSetService implements IVirtualMachineScaleSetService {
-    private subscriptionId: AAGUID;
+    private subscriptionId: string;
     private credentials: any;
     private computeClient: ComputeManagementClient;
-    constructor(credentials: any, subscriptionId: AAGUID) {
+    constructor(credentials: any, subscriptionId: string) {
         Logger.enter("VirtualMachineScaleSetService.constructor", () => {
             this.credentials = credentials;
             this.subscriptionId = subscriptionId;
@@ -341,7 +341,7 @@ class ApiClient implements IApiClient {
     private subscriptionId: string;
     constructor(
         credentials: any,
-        subscriptionId: AAGUID, storageAccountInfo: StorageAccountInfo) {
+        subscriptionId: string, storageAccountInfo: StorageAccountInfo) {
         Logger.enter("ApiClient.constructor", () => {
             this.credentials = credentials;
             this.subscriptionId = subscriptionId;
