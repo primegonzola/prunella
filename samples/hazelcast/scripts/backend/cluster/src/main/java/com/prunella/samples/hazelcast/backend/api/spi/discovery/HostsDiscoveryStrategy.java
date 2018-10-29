@@ -43,39 +43,38 @@ public class HostsDiscoveryStrategy extends AbstractDiscoveryStrategy {
 
     HostsDiscoveryStrategy(ILogger logger, Map<String, Comparable> properties) {
         super(logger, properties);
-
+        //
         // make it possible to override the value from the configuration on
         // the system's environment or JVM properties -Ddiscovery.hosts.configuration-uri=some.uri
+        //
         this.discoveryConfigFile = getOrNull("discovery.hosts", HostsDiscoveryConfiguration.DISCOVERY_CONFIG_FILE);
     }
 
     @Override
     public Iterable<DiscoveryNode> discoverNodes() {
         Collection<DiscoveryNode> nodes = new ArrayList<DiscoveryNode>();
-        List<String> lines = readLines(new File(this.discoveryConfigFile));
-        for (String line : lines) {
-            try {
+        try {
+            List<String> lines = readLines(new File(this.discoveryConfigFile));
+            for (String line : lines) {
                 Address address = new Address(line, NetworkConfig.DEFAULT_PORT);           
                 nodes.add(new SimpleDiscoveryNode(address));
-            } catch (UnknownHostException e) {
-                throw new RuntimeException("Could not resolve ip address", e);
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return nodes;
     }
 
-    private List<String> readLines(File hosts) {
-        try {
-            String line;
-            List<String> lines = new ArrayList<String>();
-            BufferedReader reader = new BufferedReader(new FileReader(hosts));
+    private List<String> readLines(File file) throws java.io.IOException {
+        String line;
+        List<String> lines = new ArrayList<String>();
+        if(file.exists()) {
+            BufferedReader reader = new BufferedReader(new FileReader(file));
             while ((line = reader.readLine()) != null) {
                 lines.add(line.trim());
-            }
-            return lines;
-        } catch (IOException e) {
-            throw new RuntimeException("Could not read hosts file", e);
+            }   
         }
+        return lines;
     }
 
     private InetAddress mapToInetAddress(String address) {
