@@ -72,8 +72,8 @@ pusha site
 mvn clean package
 popa
 cp ./site/target/*api*.jar .
-# tar -czvf ../frontend.tar.gz .
-tar --exclude='./site' -czvf ../frontend.tar.gz .
+tar -czvf ../frontend.tar.gz .
+# tar --exclude='./site' -czvf ../frontend.tar.gz .
 # upload files
 display_progress "Uploading frontend subsystem related files to bootstrap account"
 az storage blob upload -c bootstrap -f ../frontend.tar.gz -n frontend.tar.gz
