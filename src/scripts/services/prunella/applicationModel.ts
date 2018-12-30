@@ -263,6 +263,9 @@ class ApplicationModel implements IApplicationModel {
                                             }
                                         }
                                     }
+                                } else {
+                                    // handle deletes
+                                    deletes.push(state);
                                 }
                             });
                         });
