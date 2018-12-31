@@ -238,34 +238,36 @@ class ApplicationModel implements IApplicationModel {
                 // let"s do deletes & updates first
                 stateMap.each((subKey: any, subValue: any) => {
                     subValue.each((rgKey: string, rgValue: any) => {
-                        rgValue.each((typeKey: string, typeValue: any) => {
-                            typeValue.each((tagKey: string, state: IStateEntity) => {
-                                if (vmMap.has(subKey) &&
-                                    vmMap.get(subKey).has(rgKey) &&
-                                    vmMap.get(subKey).get(rgKey).has(typeKey)) {
-                                    const vm = vmMap.get(subKey).get(rgKey).get(typeKey).get(state.tag);
-                                    if (vm === null) {
-                                        // handle deletes
-                                        deletes.push(state);
-                                    } else {
-                                        // handle updates
-                                        if (state.state !== vm.provisioningState) {
-                                            // save new state
-                                            state.state = vm.provisioningState;
-                                            // update state
-                                            updates.push(state);
-                                            // check special case
-                                            if (vm.provisioningState === "Failed") {
-                                                failures.push({
-                                                    instanceId: state.tag,
-                                                    reason: "ProvisioningState Failed",
-                                                });
+                        rgValue.each((nameKey: string, nameValue: any) => {
+                            nameValue.each((tagKey: string, state: IStateEntity) => {
+                                if (state.id === id) {
+                                    if (vmMap.has(subKey) &&
+                                        vmMap.get(subKey).has(rgKey) &&
+                                        vmMap.get(subKey).get(rgKey).has(nameKey)) {
+                                        const vm = vmMap.get(subKey).get(rgKey).get(nameKey).get(state.tag);
+                                        if (vm === null) {
+                                            // handle deletes
+                                            deletes.push(state);
+                                        } else {
+                                            // handle updates
+                                            if (state.state !== vm.provisioningState) {
+                                                // save new state
+                                                state.state = vm.provisioningState;
+                                                // update state
+                                                updates.push(state);
+                                                // check special case
+                                                if (vm.provisioningState === "Failed") {
+                                                    failures.push({
+                                                        instanceId: state.tag,
+                                                        reason: "ProvisioningState Failed",
+                                                    });
+                                                }
                                             }
                                         }
+                                    } else {
+                                        // handle deletes
+                                        deletes.push(state);
                                     }
-                                } else {
-                                    // handle deletes
-                                    deletes.push(state);
                                 }
                             });
                         });
